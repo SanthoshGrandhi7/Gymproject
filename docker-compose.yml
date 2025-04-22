@@ -1,0 +1,7 @@
+version: '3'
+services:
+  gym-website:
+    build: .
+    ports:
+      - "8081:80"
+    container_name: gym_static_site
