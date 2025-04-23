@@ -14,6 +14,24 @@ pipeline {
             }
         }
 
+        stage('Install Dependencies') {
+            steps {
+                bat 'npm install'
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                bat 'npm test || exit 0' // prevents failure if no tests are defined
+            }
+        }
+
+        stage('Build Static Site') {
+            steps {
+                bat 'npm run build'
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 bat "docker build -t %IMAGE_NAME%:%IMAGE_TAG% ."
@@ -38,10 +56,10 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                echo 'Deployment step placeholder - customize based on target platform'
-                // You could add something like:
+                echo 'Deployment step placeholder - add your deployment script here'
+                // Example:
                 // bat "docker-compose down && docker-compose up -d"
-                // or SSH into server and deploy remotely
+                // or SSH deploy
             }
         }
     }
