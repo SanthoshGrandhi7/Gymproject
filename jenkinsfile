@@ -2,31 +2,42 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub')
-        IMAGE_NAME = "santhoshgrandhi/gym-static-site"
-        IMAGE_TAG = "${env.BUILD_NUMBER}"
+        DOCKER_IMAGE = "santhoshgrandhi/gym-static-site:13"
+    }
+
+    options {
+        skipDefaultCheckout()
     }
 
     stages {
         stage('Checkout') {
             steps {
-                checkout scm
+                git url: 'https://github.com/SanthoshGrandhi7/Gymproject.git', credentialsId: 'dockerhub'
             }
         }
 
         stage('Install Dependencies') {
+            when {
+                expression { fileExists('package.json') }
+            }
             steps {
                 bat 'npm install'
             }
         }
 
         stage('Run Tests') {
+            when {
+                expression { fileExists('package.json') }
+            }
             steps {
-                bat 'npm test || exit 0' // prevents failure if no tests are defined
+                bat 'npm test'
             }
         }
 
         stage('Build Static Site') {
+            when {
+                expression { fileExists('package.json') }
+            }
             steps {
                 bat 'npm run build'
             }
@@ -34,32 +45,27 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                bat "docker build -t %IMAGE_NAME%:%IMAGE_TAG% ."
-                bat "docker tag %IMAGE_NAME%:%IMAGE_TAG% %IMAGE_NAME%:latest"
+                bat "docker build -t ${env.DOCKER_IMAGE} ."
             }
         }
 
         stage('Login to Docker Hub') {
             steps {
-                bat '''
-                echo|set /p=%DOCKERHUB_CREDENTIALS_PSW%|docker login -u %DOCKERHUB_CREDENTIALS_USR% --password-stdin
-                '''
+                withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    bat 'echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin'
+                }
             }
         }
 
         stage('Push to Docker Hub') {
             steps {
-                bat "docker push %IMAGE_NAME%:%IMAGE_TAG%"
-                bat "docker push %IMAGE_NAME%:latest"
+                bat "docker push ${env.DOCKER_IMAGE}"
             }
         }
 
         stage('Deploy') {
             steps {
-                echo 'Deployment step placeholder - add your deployment script here'
-                // Example:
-                // bat "docker-compose down && docker-compose up -d"
-                // or SSH deploy
+                echo 'Deploy step would go here'
             }
         }
     }
@@ -67,7 +73,11 @@ pipeline {
     post {
         always {
             bat 'docker logout'
-            bat "docker rmi %IMAGE_NAME%:%IMAGE_TAG% || exit 0"
+            bat "docker rmi ${env.DOCKER_IMAGE} || exit 0"
+        }
+
+        failure {
+            echo 'Pipeline failed. Check logs above.'
         }
     }
 }
