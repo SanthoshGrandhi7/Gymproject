@@ -10,11 +10,11 @@ pipeline {
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                git branch: 'main', url: 'https://github.com/SanthoshGrandhi7/Gymproject.git', credentialsId: 'dockerhub'
-            }
-        }
+       stage('Checkout') {
+    steps {
+        git branch: 'main', url: 'https://github.com/SanthoshGrandhi7/Gymproject.git', credentialsId: 'dockerhub'
+    }
+}
 
         stage('Install Dependencies') {
             when {
@@ -60,19 +60,6 @@ pipeline {
         stage('Push to Docker Hub') {
             steps {
                 bat "docker push ${env.DOCKER_IMAGE}"
-            }
-        }
-
-        stage('Stop Old Container') {
-            steps {
-                bat 'docker stop gym-site || exit 0'
-                bat 'docker rm gym-site || exit 0'
-            }
-        }
-
-        stage('Run New Container') {
-            steps {
-                bat "docker run -d -p 8081:80 --name gym-site santhoshgrandhi/gym-static-site:13"
             }
         }
 
